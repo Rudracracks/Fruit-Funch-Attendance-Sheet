@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fruit Punch Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      padding: 20px;
+    }
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #2e7d32;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    input[type="radio"] {
+      width: auto;
+    }
+    .radio-group {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      margin-top: 15px;
+      font-size: 18px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #response {
+      text-align: center;
+      margin-top: 15px;
+      color: #007700;
+      font-weight: bold;
+    }
+    #otherAsmField {
+      display: none;
+    }
+    #spinner {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+    video {
+      display: none;
+      width: 100%;
+      margin-top: 10px;
+    }
+  </style>
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('Service Worker registered.'))
+          .catch(err => console.log('Service Worker registration failed:', err));
+      });
+    }
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h2>Fruit Punch Attendance</h2>
+    <form id="fruitForm">
+      <label>Date:</label>
+      <input type="date" name="date" id="dateField" readonly required>
+
+      <label>Time:</label>
+      <input type="time" name="time" id="timeField" readonly required>
+
+      <label>ASM Name:</label>
+      <select name="asm" id="asmSelect" required>
+        <option value="">Select</option>
+        <option value="Avinash sable">Avinash sable</option>
+        <option value="Rakesh Sawant">Rakesh Sawant</option>
+        <option value="Shubham Air">Shubham Air</option>
+        <option value="Akash Gaikwad">Akash Gaikwad</option>
+        <option value="Ganesh Wagh">Ganesh Wagh</option>
+        <option value="Ravindra Karle">Ravindra Karle</option>
+        <option value="Krushna Rathod">Krushna Rathod</option>
+        <option value="Ajay Kadu">Ajay Kadu</option>
+        <option value="Other">Other</option>
+      </select>
+      <input type="text" name="asmOther" id="otherAsmField" placeholder="Enter ASM Name if Other">
+
+      <label>Shop Name:</label>
+      <input type="text" name="shopName" required>
+
+      <label>Store Type:</label>
+      <div class="radio-group">
+        <label><input type="radio" name="storeType" value="New" required> New</label>
+        <label><input type="radio" name="storeType" value="Existing"> Existing</label>
+      </div>
+
+      <label>Order Placed:</label>
+      <div class="radio-group">
+        <label><input type="radio" name="orderPlaced" value="Yes" required> Yes</label>
+        <label><input type="radio" name="orderPlaced" value="No"> No</label>
+      </div>
+
+      <label>Take Photo:</label>
+      <button type="button" onclick="takePhoto()">Open Camera</button>
+      <video id="video" autoplay></video>
+      <canvas id="canvas" style="display:none;"></canvas>
+
+      <button type="submit">Submit</button>
+    </form>
+
+    <div id="spinner">
+      <svg width="50" height="50" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="35" stroke="#4CAF50" stroke-width="10" fill="none" stroke-linecap="round">
+          <animateTransform attributeName="transform" type="rotate" dur="1s" repeatCount="indefinite"
+            from="0 50 50" to="360 50 50"/>
+        </circle>
+      </svg>
+      <p style="color:#555;">Submitting...</p>
+    </div>
+
+    <p id="response"></p>
+  </div>
+
+  <script>
+    const form = document.getElementById("fruitForm");
+    let imageBase64 = "";
+
+    // Fill current date & time
+    window.onload = function () {
+      const now = new Date();
+      document.getElementById("dateField").value = now.toISOString().split("T")[0];
+      document.getElementById("timeField").value = now.toTimeString().split(":").slice(0, 2).join(":");
+    };
+
+    document.getElementById("asmSelect").addEventListener("change", function () {
+      const otherField = document.getElementById("otherAsmField");
+      if (this.value === "Other") {
+        otherField.style.display = "block";
+        otherField.required = true;
+      } else {
+        otherField.style.display = "none";
+        otherField.required = false;
+      }
+    });
+
+    function takePhoto() {
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => {
+          video.style.display = "block";
+          video.srcObject = stream;
+
+          setTimeout(() => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext("2d").drawImage(video, 0, 0);
+            imageBase64 = canvas.toDataURL("image/jpeg").split(",")[1];
+            stream.getTracks().forEach(track => track.stop());
+            video.style.display = "none";
+            alert("📸 Photo captured successfully!");
+          }, 3000); // Wait 3 seconds before capturing frame
+        })
+        .catch(err => {
+          alert("❌ Camera access denied or failed: " + err);
+        });
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      document.getElementById("spinner").style.display = "block";
+
+      if (!imageBase64) {
+        alert("Please take a photo first.");
+        document.getElementById("spinner").style.display = "none";
+        return;
+      }
+
+      const formData = new URLSearchParams(new FormData(form));
+      if (document.getElementById("asmSelect").value === "Other") {
+        formData.set("asm", document.getElementById("otherAsmField").value);
+      }
+
+      formData.append("base64Photo", imageBase64);
+
+      fetch("https://script.google.com/macros/s/AKfycbxDL3Gc-h4cKwLyVDlBSwrWb3mIsIyZa-CNBTnJbvuOiNqhKdIF61LmvGFTvyY4x7dT/exec", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.text())
+      .then(text => {
+        alert("✅ " + text);
+        document.getElementById("response").innerText = text;
+        form.reset();
+        window.onload();
+        imageBase64 = "";
+        document.getElementById("otherAsmField").style.display = "none";
+      })
+      .catch(err => {
+        document.getElementById("response").innerText = "❌ Upload failed: " + err;
+      })
+      .finally(() => {
+        document.getElementById("spinner").style.display = "none";
+      });
+    });
+  </script>
+</body>
+</html>
