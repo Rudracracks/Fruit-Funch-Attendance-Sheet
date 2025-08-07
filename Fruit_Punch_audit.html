@@ -41,6 +41,14 @@
       justify-content: space-between;
       margin-top: 5px;
     }
+    .camera-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .camera-buttons button {
+      width: 100%;
+    }
     button {
       width: 100%;
       padding: 12px;
@@ -72,6 +80,15 @@
       display: none;
       width: 100%;
       margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    #capturedImage {
+      display: none;
+      width: 100%;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
   </style>
   <link rel="manifest" href="manifest.json">
@@ -104,6 +121,7 @@
         <option value="Akash Gaikwad">Akash Gaikwad</option>
         <option value="Ganesh Wagh">Ganesh Wagh</option>
         <option value="Ravindra Karle">Ravindra Karle</option>
+        <option value="Krushna Rathod">Krushna Rathod</option>
         <option value="Ajay Kadu">Ajay Kadu</option>
         <option value="Other">Other</option>
       </select>
@@ -125,8 +143,12 @@
       </div>
 
       <label>Take Photo:</label>
-      <button type="button" onclick="takePhoto()">Open Camera</button>
+      <div class="camera-buttons">
+        <button type="button" id="openCameraButton">Open Camera</button>
+        <button type="button" id="capturePhotoButton" style="display:none;">Capture Photo</button>
+      </div>
       <video id="video" autoplay></video>
+      <img id="capturedImage" alt="Captured Image">
       <canvas id="canvas" style="display:none;"></canvas>
 
       <button type="submit">Submit</button>
@@ -147,7 +169,13 @@
 
   <script>
     const form = document.getElementById("fruitForm");
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const capturedImage = document.getElementById("capturedImage");
+    const openCameraButton = document.getElementById("openCameraButton");
+    const capturePhotoButton = document.getElementById("capturePhotoButton");
     let imageBase64 = "";
+    let stream;
 
     // Fill current date & time
     window.onload = function () {
@@ -167,29 +195,38 @@
       }
     });
 
-    function takePhoto() {
-      const video = document.getElementById("video");
-      const canvas = document.getElementById("canvas");
+    openCameraButton.addEventListener('click', function() {
       navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-        .then(stream => {
-          video.style.display = "block";
+        .then(function(s) {
+          stream = s;
           video.srcObject = stream;
-
-          setTimeout(() => {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext("2d").drawImage(video, 0, 0);
-            imageBase64 = canvas.toDataURL("image/jpeg").split(",")[1];
-            stream.getTracks().forEach(track => track.stop());
-            video.style.display = "none";
-            alert("📸 Photo captured successfully!");
-          }, 3000); // Wait 3 seconds before capturing frame
+          video.style.display = "block";
+          capturedImage.style.display = "none";
+          openCameraButton.style.display = "none";
+          capturePhotoButton.style.display = "block";
         })
         .catch(err => {
           alert("❌ Camera access denied or failed: " + err);
         });
-    }
+    });
 
+    capturePhotoButton.addEventListener('click', function() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d").drawImage(video, 0, 0);
+      imageBase64 = canvas.toDataURL("image/jpeg").split(",")[1];
+      capturedImage.src = canvas.toDataURL("image/jpeg");
+      capturedImage.style.display = "block";
+      video.style.display = "none";
+
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      capturePhotoButton.style.display = "none";
+      openCameraButton.style.display = "block";
+      alert("📸 Photo captured successfully!");
+    });
+    
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       document.getElementById("spinner").style.display = "block";
@@ -218,6 +255,8 @@
         form.reset();
         window.onload();
         imageBase64 = "";
+        capturedImage.src = "";
+        capturedImage.style.display = "none";
         document.getElementById("otherAsmField").style.display = "none";
       })
       .catch(err => {
@@ -229,5 +268,4 @@
     });
   </script>
 </body>
-
 </html>
