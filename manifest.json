@@ -2,7 +2,7 @@
   "name": "Fruit Punch Attendance",
   "short_name": "FP Attendance",
   "description": "An application for recording fruit punch attendance.",
-  "start_url": "./",
+  "start_url": "./Fruit_Punch_audit.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
